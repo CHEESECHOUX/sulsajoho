@@ -1,11 +1,16 @@
-import json
+import json, re
+
+from json.decoder     import JSONDecodeError
 
 from django.shortcuts import render
 from django.views     import View
 from django.http      import JsonResponse, HttpResponse
 from django.db.models import Q
 
-from products.models  import Product
+from products.models  import Product, Comment
+from users.models     import User
+
+from users.decorator  import log_in_decorator
 
 
 class ProductListView(View):
@@ -80,3 +85,50 @@ class ProductDetailView(View):
             "product_detail": product_detail
             },
             status = 200)
+
+class CommentView(View):
+    @log_in_decorator
+    def post(self, request, product_id):
+        try:
+            data    = json.loads(request.body)
+            user    = request.user
+            content = data.get('content', None)
+
+            if not Product.objects.filter(id=product_id).exists():
+                return JsonResponse({'message': 'PRODUCT_DOES_NOT_EXIST'}, status=404)
+            
+            Comment.objects.create(
+                content    = content,
+                user       = user,
+                product_id = product_id
+                )
+
+            return JsonResponse({'message':'SUCCESS'}, status=201)
+
+        except JSONDecodeError:
+            return JsonResponse({'message':'JSON_DECODE_ERROR'}, status=400)
+
+    def get(self, request, product_id):
+        if not Product.objects.filter(id=product_id).exists():
+            return JsonResponse({'message':'COMMENT_DOES_NOT_EXIST'}, status=404)
+
+        comment_list = [{
+            "id"        : comment.id,
+            "name"      : User.objects.get(id=comment.user.id).name,
+            "content"   : comment.content,
+            "create_at" : comment.created_at
+            } for comment in Comment.objects.filter(product_id=product_id)
+        ]
+
+        return JsonResponse({'data':comment_list}, status=200)
+
+    @log_in_decorator
+    def delete(self, request, product_id, comment_id):
+        user_id    = request.user.id
+        product_id = product_id
+        
+        if not Comment.objects.filter(id=comment_id, product_id=product_id, user_id=user_id).exists():
+            return JsonResponse({'message':'COMMENT_DOES_NOT_EXIST'}, status=404)
+
+        Comment.objects.filter(id=comment_id, product_id=product_id, user_id=user_id).first().delete()
+        return JsonResponse({'message': 'SUCCESS'}, status=204)
