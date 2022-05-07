@@ -132,3 +132,34 @@ class CommentView(View):
 
         Comment.objects.filter(id=comment_id, product_id=product_id, user_id=user_id).first().delete()
         return JsonResponse({'message': 'SUCCESS'}, status=204)
+
+class SubscribeView(View):
+    def get(self, request, product_id):
+        try:
+            products = Product.objects.filter(id = product_id)
+
+            subscribe_detail = [({
+                'id'                 : product.id,
+                'name'               : product.name,
+                'product_image'      : product.productimage_set.first().image_url,
+                'description_detail' : product.description_detail,
+                'price'              : product.price,
+                'alcohol_percentage' : product.alcohol_percentage,
+                'description_tag'    : product.description_tag,
+                'taste'              : [{
+                    'id'              : taste.id,
+                    'spiceness'       : taste.spiceness,
+                    'savory'          : taste.savory,
+                    'refreshness'     : taste.refreshness,
+                    'taste_intensity' : taste.taste_intensity,
+                    'sweetness'       : taste.sweetness
+                    } for taste in product.category.taste_set.all()]
+            })for product in products]
+
+        except Product.DoesNotExist:
+            return JsonResponse({'message':'PRODUCT_DOES_NOT_EXIST'}, status = 404)
+        return JsonResponse({
+            "message" : 'Subscribe_detail',
+            'subscribe_detail': subscribe_detail
+            },
+            status = 200)
