@@ -14,6 +14,7 @@
 - virtual env
 - create DB
 <img width="963" alt="Screen Shot 2022-05-08 at 0 03 10" src="https://user-images.githubusercontent.com/98144690/167260000-8b286378-cc90-4057-9703-748b53880b61.png">
+
 - project repository Clone
 - Django project
 - .gitignore
@@ -22,7 +23,6 @@
 2. modelings
 - Create git branch
 - startapp 'users', 'products', 'core'
-
 
 ## Features
 1. Signup, Login
